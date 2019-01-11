@@ -1,0 +1,191 @@
+telecharger arduino : https://www.arduino.cc/en/Main/Software -64 bits linux-
+
+lancer arduino: sudo ./install.sh puis sudo ./arduino
+
+telecharger sur arduino paquet mk100, changer port et type de carte
+
+pour coap.h et dht.h il faut inclure les bibliothèque via arduino -croquis-inclure bibli-gérer bibli
+
+pour adafruit.h télécharger le zip sur internet et le mettre dans arduino.1.8.0 puis dans librairies
+
+telecharger OS rasberry sur micro carte avec ordi portable
+creer un reseau --> addr ip rasberry + addr passerelle
+
+connecte cable Ethernet (1er port --> enp2s0) à rasberry 
+add an ip address : sudo ip a add 192.168.0.2/30 dev enp2s0 (addr ip passerelle rasberry)
+del an ip address : sudo ip a del 192.168.0.1/30 dev enp2s0 
+voir les interfaces réseaux : ip -c a
+
+pb : suppression de l'adresse ip que je viens de rajouter sur le dev enp2s0
+résolu tout seul
+
+pb : ssh: connect to host 192.0.0.1 port 22: Network is unreachable
+--> erreur d'écriture de l'addresse ip... 
+
+
+pb : sudo ssh bouvry@192.168.0.1
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+@    WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!     @
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+-->faire la commande qu'il demande : sudo ssh-keygen -f "/root/.ssh/known_hosts" -R "192.168.0.1"
+
+pb : ping 192.168.0.1 (addr IP rasberry)
+56 packets transmitted, 0 received, 100% packet loss
+--> pb résolu tout seul en attendant.. peut être débrancher puis rebrancher
+
+----------------------------------
+pb : sudo apt install python-pip ou sudo apt-get update --fix-missing
+Impossible de récupérer http://ports.ubuntu.com/.../ Erreur temporaire de résolution de « ports.ubuntu.com » 
+
+identification du pb : IL N Y A PAS INTERNET
+ping google.com : 23 packets transmitted, 0 received, 100% packet loss
+
+tentative de reconnection partage de co avec mon portable --> brancher sa rasberry sur ecran souris et clavier, cliquer sur reseau en haut a droite, edit une connection wifi
+
+rasberry connectée a mon telephone, addr ip donnée par mon telephone a rasberry --> 192.168.43.64
+ping google.com ne marche toujours pas :( 
+
+	nouveau pb : suite a ip link set dev enx... down ,sur terminal de ma rasberry
+		  LOGIQUE : supprimer port rasberry pour ta co ..
+		TENTATIVE : ip link set dev enx... up sur écran hdmi rasberry
+
+pas de connection internet filaire...
+
+MAIS connection internet avec portable Keven, avec le mien la connection était établie mais je n'arrivais pas à accéder à internet
+---------------------------------------------
+
+telechargement de pip, flaks (pip install Flask) et coapthon (pip install Coapthon)
+
+importer les document coap-http.py (et coapclient.py) en changeant l'addresse ip par l'addresse ip attribué à ma rasberry par le portable de Keven.
+--> changer .ino 
+
+
+hostArduino = "192.168.43.241"
+port = 5000 (ou 5683)
+...
+app.run(host="127.0.0.1",debug=True) -->sur coap-http.py
+ou
+app.run(host="192.168.0.1",debug=True) -->sur coap-http.py
+pb : noteype error sur _playload
+,,,, run sur localhost ?
+
+rasberry + arduino connectés au telephone Keven 
+
+redondance de programme sur rasberry tjrs mm pb de type... 
+
+
+SUITE DU PROJET    
+sur ordi: freeboard.io (création d'histogramme)
+				 <-----> BROKER (Rasberry PI, utiliser mosquito)
+				 <----- PUBLISHER (arduino, MQTT)
+
+Mosquitto est un serveur MQTT Open Source (aussi appelé Broker) que l’on peut installer sur un Raspberry Pi
+
+telecharger mosquitto sur rasberry : sudo apt-get update
+				     sudo apt-get install mosquitto
+--> installer mosquitto_sub, mosquitto_pub et mosquittopasssw ?
+commande : sudo apt-get install mosquitto-clients
+ou       : sudo apt-get install mosquitto mosquitto-clients python-mosquitto
+
+serveur d'essai http://test.mosquitto.org/ 
+
+commande sur rasberry : mosquitto --> permet de connaitre version, la config et le port d'écoute.
+1543250072: mosquitto version 1.4.8 (build date Wed, 05 Sep 2018 15:51:27 -0300) starting
+1543250072: Using default config.
+1543250072: Opening ipv4 listen socket on port 1883.
+1543250072: Error: Address already in use
+
+commande : service mosquitto status (voir rapport d'apache2)
+stop the service : sudo service mosquitto stop start the service avec start..)
+
+sur rasberry, lancer le serveur mosquitto (peut faire fichier python) 
+sur arduino, télécharger librairie MQTT et regarder example
+
+publisher arduino {client}
+subscriber le pc {client}
+serveur/broker raspberry
+
+code arduino: ex de librairies mosquitto_esp8266
+
+télécharger PubSubClient sur arduino. 
+
+pour se connecter au wifi de son portable avec la rasberry : 
+crée fichier wpa_suplicant.conf dans /etc/wpa_supplicant/ et y mettre :
+	contry=FR
+
+	network={
+	ssid="AndroidAPppp"
+	psk="antototo"
+}
+
+puis dans network/interfaces :
+	auto wlx[compléter ac ip -c a]
+	iface wlx inet dhcp
+	wpa-conf /etc/wpa_supplicant/wpa_supplicant.conf
+
+dans mon code arduino : 
+#include <SPI.h>
+#include <Dhcp.h>
+#include <Dns.h>
+#include <WiFi101.h>
+#include <WiFiUdp.h>
+#include <PubSubClient.h>
+#include <DHT_U.h>
+#include <DHT.h>
+#include <Adafruit_Sensor.h>
+...
+const char* ssid = "AndroidAPppp";
+const char* password = "antototo";
+const char* mqtt_server = "192.168.43.64";  -->ip rasberry sur ton portable
+int keyIndex = 0;      
+WiFiClient espClient;
+PubSubClient client(espClient);
+...
+
+commandes: sudo apt-get install mosquitto-clients
+pour le pc 
+
+sur pc, pour subscribe : commandes: mosquitto_sub -h {ip raspberry sur pc} -t {topic ex temperature}
+
+pour node-red-dashboard : npm install node-red-dashboard 
+			 sudo apt install npm
+			--> pb de paquet défectueux...
+			sudo apt-get update
+			sudo apt-get upgrade 
+--> SOLUTION : il fallait installer toutes les dependances qu'il te demandait (4 en tout)
+
+le lancer : node-red sur rasberry 
+pb:   npm update check failed                  
+│           Try running with sudo or get access            
+│           to the local update config store via           
+│ sudo chown -R $USER:$(id -gn $USER) /home/bouvry/.config
+
+
+lancer node-red sur le pc avec l'addresse ip : 192.168.0.1
+prendre dans output (à gauche) mqtt et donner le nom de topic
+connecter un dashboard a chaque topic en téléchargeant dans manage palette (recherche dashboard).
+
+donner @ ip localhost dans les mqtt et dans les gauges donner des noms au groupe !!!!!!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
